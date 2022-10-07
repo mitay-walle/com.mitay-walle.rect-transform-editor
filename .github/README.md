@@ -5,4 +5,4 @@
 - Snap - stretch selected RectTransform to parent  
   
     
-![alt text](https://github.com/mitay-walle/CustomRectTransformEditor/blob/main/.github/photo_2021-10-16_14-02-43.jpg?raw=true)
+![alt text](https://github.com/mitay-walle/CustomRectTransformEditor/blob/main/.github/Documentation/photo_2021-10-16_14-02-43.jpg?raw=true)
