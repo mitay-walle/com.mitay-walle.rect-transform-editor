@@ -160,7 +160,6 @@ namespace Plugins.mitaywalle.Editor
             Undo.RecordObject(rect, "Create Empty, Reparent");
 
             Undo.RegisterCreatedObjectUndo(go, "Create Empty Parent");
-            Undo.RegisterCreatedObjectUndo(go.transform, "Create Empty Parent");
 
             var rect2 = go.transform as RectTransform;
 
