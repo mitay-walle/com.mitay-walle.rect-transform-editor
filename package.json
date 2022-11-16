@@ -1,0 +1,11 @@
+{
+  "name": "com.mitay-walle.rect-transform-editor",
+  "version": "1.0.1",
+  "displayName": "UI Rect Transform Editor",
+  "unity": "2018.4",
+    "keywords": [
+    "UI",
+    "Productivity"
+  ],
+  "author": "mitay-walle <mitay-walle91@mail.ru> (https://github.com/mitay-walle)"
+}
