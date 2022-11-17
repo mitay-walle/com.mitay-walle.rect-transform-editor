@@ -226,7 +226,7 @@ namespace Plugins.UI.Editor
             return value;
         }
 
-        private bool NeedMoveY(RectTransform target) => _rectDrivenObject.GetValue(target) != default;
+        private bool NeedMoveY(RectTransform target) => target.drivenByObject != null;
     }
 
     [Serializable]
