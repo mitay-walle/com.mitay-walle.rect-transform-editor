@@ -3,13 +3,15 @@ using System.Reflection;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
-using UnityEngine.UI;
+using Object = UnityEngine.Object;
 
-namespace Plugins.mitaywalle.Editor
+namespace Plugins.UI.Editor
 {
     [CustomEditor(typeof(RectTransform), true), CanEditMultipleObjects]
     public class CustomRectTransformEditor : UnityEditor.Editor
     {
+        private static PropertyInfo _rectDrivenObject = typeof(RectTransform).GetProperty("drivenByObject"
+            , BindingFlags.NonPublic | BindingFlags.Instance);
         private UnityEditor.Editor editorInstance;
         private static Type nativeEditor;
         private MethodInfo onSceneGui;
@@ -74,7 +76,7 @@ namespace Plugins.mitaywalle.Editor
             // Code here
             if (GUI.Button(rect, "Snap"))
             {
-                foreach (var targ in targets)
+                foreach (Object targ in targets)
                 {
                     if (targ is RectTransform rectTr)
                     {
@@ -90,7 +92,7 @@ namespace Plugins.mitaywalle.Editor
 
             if (GUI.Button(rect, "New"))
             {
-                foreach (var targ in targets)
+                foreach (Object targ in targets)
                 {
                     if (targ is RectTransform rectTr)
                     {
@@ -119,7 +121,7 @@ namespace Plugins.mitaywalle.Editor
 
             if (GUI.Button(rect, "P"))
             {
-                foreach (var targ in targets)
+                foreach (Object targ in targets)
                 {
                     Undo.RecordObject(targ, "Paste");
                     ComponentUtility.PasteComponentValues(target as RectTransform);
@@ -152,7 +154,7 @@ namespace Plugins.mitaywalle.Editor
 
         public static void CreateEmptyParentRect(RectTransform rect)
         {
-            var go = new GameObject("Create Empty Parent");
+            GameObject go = new GameObject("Create Empty Parent");
 
             ComponentUtility.CopyComponent(rect);
             ComponentUtility.PasteComponentAsNew(go);
@@ -160,13 +162,14 @@ namespace Plugins.mitaywalle.Editor
             Undo.RecordObject(rect, "Create Empty, Reparent");
 
             Undo.RegisterCreatedObjectUndo(go, "Create Empty Parent");
+            Undo.RegisterCreatedObjectUndo(go.transform, "Create Empty Parent");
 
-            var rect2 = go.transform as RectTransform;
+            RectTransform rect2 = go.transform as RectTransform;
 
             PlaceSameAs(go.transform, rect, true, true, true);
             ComponentUtility.PasteComponentValues(rect2);
             Undo.SetTransformParent(rect, go.transform, "Create Empty, Reparent");
-            SnapToParent(rect);
+            rect.SnapToParent();
 
             EditorUtility.SetDirty(rect);
 
@@ -185,7 +188,7 @@ namespace Plugins.mitaywalle.Editor
                 if (copyName) Undo.RecordObject(target.gameObject, "PlaceSameAs");
             }
 
-            var matrix = new VectorArray(source, false);
+            VectorArray matrix = new VectorArray(source, false);
             matrix.Apply(target);
             if (undo)
             {
@@ -207,29 +210,23 @@ namespace Plugins.mitaywalle.Editor
             }
         }
 
+        // ReSharper disable Unity.PerformanceAnalysis
         private bool NeedMoveY()
         {
-            bool flag = false;
-            bool anyDrivenX = false;
-            bool anyDrivenY = false;
-            bool anyWithoutParent = false;
+            bool value = false;
             foreach (RectTransform target in targets)
             {
-                bool hasLayoutParent = target.parent && target.parent.GetComponent<ILayoutController>() != null &&
-                                       (target.parent.GetComponent<ILayoutController>() as Behaviour).enabled;
-
-                bool hasSelfLayout = target.GetComponent<ILayoutSelfController>() != null &&
-                                     target.GetComponent<ILayoutSelfController>() as Behaviour &&
-                                     ((Behaviour) target.GetComponent<ILayoutSelfController>()).enabled;
-
-                if (target.parent != null && (hasSelfLayout || hasLayoutParent))
+                if (NeedMoveY(target))
                 {
-                    flag = true;
+                    value = true;
+                    break;
                 }
             }
 
-            return flag;
+            return value;
         }
+
+        private bool NeedMoveY(RectTransform target) => _rectDrivenObject.GetValue(target) != default;
     }
 
     [Serializable]
