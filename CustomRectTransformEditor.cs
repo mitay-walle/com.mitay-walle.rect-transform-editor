@@ -169,7 +169,7 @@ namespace Plugins.UI.Editor
             PlaceSameAs(go.transform, rect, true, true, true);
             ComponentUtility.PasteComponentValues(rect2);
             Undo.SetTransformParent(rect, go.transform, "Create Empty, Reparent");
-            rect.SnapToParent();
+            SnapToParent(rect);
 
             EditorUtility.SetDirty(rect);
 
