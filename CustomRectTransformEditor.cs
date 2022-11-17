@@ -177,6 +177,18 @@ namespace Plugins.UI.Editor
             EditorGUIUtility.PingObject(go);
         }
 
+        private static void SnapToParent(RectTransform rect)
+        {
+            rect.pivot = new Vector2(.5f, .5f);
+            rect.localScale = Vector3.one;
+            rect.localPosition = Vector3.zero;
+            rect.localRotation = Quaternion.identity;
+            rect.anchoredPosition = Vector2.zero;
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.sizeDelta = Vector2.zero;
+        }
+
         private static void PlaceSameAs(Transform target, Transform source, bool copyName = false, bool undo = false,
             bool setDirty = false)
         {
