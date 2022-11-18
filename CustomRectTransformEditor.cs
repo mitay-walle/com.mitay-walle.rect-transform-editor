@@ -162,7 +162,6 @@ namespace Plugins.UI.Editor
             Undo.RecordObject(rect, "Create Empty, Reparent");
 
             Undo.RegisterCreatedObjectUndo(go, "Create Empty Parent");
-            Undo.RegisterCreatedObjectUndo(go.transform, "Create Empty Parent");
 
             RectTransform rect2 = go.transform as RectTransform;
 
