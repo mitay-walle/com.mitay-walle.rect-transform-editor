@@ -10,61 +10,73 @@ namespace Plugins.UI.Editor
 	[CustomEditor(typeof(RectTransform), true), CanEditMultipleObjects]
 	public class CustomRectTransformEditor : UnityEditor.Editor
 	{
+		private const string NATIVE_EDITOR_TYPE = "UnityEditor.RectTransformEditor";
 		private static PropertyInfo _rectDrivenObject = typeof(RectTransform).GetProperty("drivenByObject"
-		                                                                                  , BindingFlags.Public | BindingFlags.Instance);
+			, BindingFlags.Public | BindingFlags.Instance);
 		private UnityEditor.Editor editorInstance;
-		private static Type nativeEditor;
+		private static Type nativeEditorType;
 		private MethodInfo onSceneGui;
+		private MethodInfo onDisable;
+		private Action<SceneView> drawAnchorsOnSceneViewDelegate;
 
 		private Rect _rect = new Rect(45, 65, 45, 18);
 		private Rect _rect2 = new Rect(70, 25, 20, 18);
 		private Rect _rect3 = new Rect(70, 45, 20, 18);
 		private Rect _rect4 = new Rect(0, 65, 45, 18);
-		bool _isOnSceneGUICalledThisFrame;
 
 		private void OnEnable()
 		{
 			if (targets.Length == 0 || targets[0] == null) return;
 
 			Initialize();
-			if (nativeEditor == null) return;
+			if (nativeEditorType == null) return;
 			if (editorInstance == null) return;
 
+			InitOnSceneGUIFix();
+			ExecuteOnSceneGUIFix();
 			try
 			{
 				if (editorInstance.targets.Length > 0 && editorInstance.targets[0] != null)
 				{
-					nativeEditor.GetMethod("OnEnable",
-					                       BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)
+					nativeEditorType.GetMethod("OnEnable",
+							BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)
 						?.Invoke(editorInstance, null);
 				}
 			}
 			catch
 			{
 			}
-
-			onSceneGui = nativeEditor.GetMethod("OnSceneGUI",
-			                                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-			SceneView.duringSceneGui -= OnSceneGUIEvent;
-			SceneView.duringSceneGui += OnSceneGUIEvent;
 		}
 
 		private void Initialize()
 		{
-			if (nativeEditor == null)
+			if (nativeEditorType == null)
 			{
-				nativeEditor = Assembly.GetAssembly(typeof(UnityEditor.Editor))
-					.GetType("UnityEditor.RectTransformEditor");
+				nativeEditorType = Assembly.GetAssembly(typeof(UnityEditor.Editor)).GetType(NATIVE_EDITOR_TYPE);
 			}
 
 			if (editorInstance)
 			{
-				CreateCachedEditor(targets, nativeEditor, ref editorInstance);
+				CreateCachedEditor(targets, nativeEditorType, ref editorInstance);
 			}
 			else
 			{
-				editorInstance = CreateEditor(targets, nativeEditor);
+				editorInstance = CreateEditor(targets, nativeEditorType);
 			}
+		}
+
+		private void InitOnSceneGUIFix()
+		{
+			// fix recursive SceneView.duringSceneGui subscription, that affects performance
+			onSceneGui = nativeEditorType.GetMethod("OnSceneGUI", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+			onDisable = nativeEditorType.GetMethod("OnDisable", BindingFlags.NonPublic | BindingFlags.Instance);
+			var method = nativeEditorType.GetMethod("DrawAnchorsOnSceneView", BindingFlags.NonPublic | BindingFlags.Instance);
+			drawAnchorsOnSceneViewDelegate = (Action<SceneView>)method.CreateDelegate(typeof(Action<SceneView>), editorInstance);
+		}
+
+		private void ExecuteOnSceneGUIFix()
+		{
+			SceneView.duringSceneGui -= drawAnchorsOnSceneViewDelegate;
 		}
 
 		public override void OnInspectorGUI()
@@ -133,18 +145,9 @@ namespace Plugins.UI.Editor
 			}
 		}
 
-		private void OnSceneGUIEvent(SceneView sceneView)
-		{
-			_isOnSceneGUICalledThisFrame = false;
-		}
-
 		private void OnSceneGUI()
 		{
-			if (_isOnSceneGUICalledThisFrame) return;
-
-			_isOnSceneGUICalledThisFrame = true;
-
-			if (!(bool)this.target)
+			if (!(bool)target)
 				return;
 
 			onSceneGui.Invoke(editorInstance, null);
@@ -152,8 +155,12 @@ namespace Plugins.UI.Editor
 
 		private void OnDisable()
 		{
-			SceneView.duringSceneGui -= OnSceneGUIEvent;
-			if (editorInstance) DestroyImmediate(editorInstance);
+			SceneView.duringSceneGui -= drawAnchorsOnSceneViewDelegate;
+			if (editorInstance)
+			{
+				onDisable?.Invoke(editorInstance, null);
+				DestroyImmediate(editorInstance);
+			}
 		}
 
 		private static void SnapToParent(RectTransform rect)
