@@ -139,7 +139,7 @@ namespace Plugins.UI.Editor
 				foreach (Object targ in targets)
 				{
 					Undo.RecordObject(targ, "Paste");
-					ComponentUtility.PasteComponentValues(target as RectTransform);
+					ComponentUtility.PasteComponentValues(targ as RectTransform);
 					EditorUtility.SetDirty(targ);
 				}
 			}
